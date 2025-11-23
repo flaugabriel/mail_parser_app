@@ -1,0 +1,2 @@
+module EmailFilesHelper
+end

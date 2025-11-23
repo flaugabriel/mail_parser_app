@@ -1,0 +1,68 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mail_parser_app:latest
+    container_name: web
+    ports:
+      - "3000:3000"
+    command: bash start-prod.sh
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - rails_storage:/app/storage
+    environment:
+      DATABASE_HOST: db
+      RAILS_ENV: production
+      REDIS_HOST: redis
+      POSTGRES_USER: postgres
+      POSTGRES_DB: mail_parser_app_production
+      POSTGRES_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/1
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: mail_parser_app_production
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_eml_processor
+    ports:
+      - "6379:6379"
+
+  sidekiq:
+    image: mail_parser_app:latest
+    command: bundle exec sidekiq -e production
+    environment:
+      DATABASE_HOST: db
+      RAILS_ENV: production
+      REDIS_URL: redis://redis:6379/1
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: mail_parser_app_production
+    
+    # 🎯 CORREÇÃO CRÍTICA DO ActiveStorage: Compartilhar o volume de armazenamento!
+    volumes:
+      - .:/app # Compartilha o código (opcional, mas recomendado)
+      - rails_storage:/app/storage # NECESSÁRIO para ler o arquivo .eml salvo pelo 'web'
+
+    # 🎯 CORREÇÃO DE DEPENDÊNCIA: O Sidekiq depende do DB e Redis, não do Web.
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db_data:
+  rails_storage:

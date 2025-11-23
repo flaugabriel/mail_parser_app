@@ -1,0 +1,6 @@
+<tr id="<%= dom_id(processing_log) %>" class="<%= log_row_class(processing_log.status) %>">
+  <td><%= processing_log.email_file&.file&.filename %></td>
+  <td><%= processing_log.status.humanize %></td>
+  <td><%= truncate(processing_log.message, length: 60) %></td>
+  <td><%= l processing_log.created_at, format: :short %></td>
+</tr>

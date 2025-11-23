@@ -1,0 +1,34 @@
+class EmailFilesController < ApplicationController
+  before_action :set_email_file, only: %i[ show ]
+
+  # GET /email_files or /email_files.json
+  def index
+    @email_files = EmailFile.order(created_at: :desc).limit(100)
+    @customers = Customer.order(created_at: :desc).limit(50)
+    @logs = ProcessingLog.order(created_at: :desc).limit(100)
+  end
+
+  # POST /email_files or /email_files.json
+  def create
+    email_file = EmailFile.new(email_file_params.merge(save_params))
+    if email_file.save
+      ProcessEmailJob.perform_later(email_file)
+
+      flash[:notice] = "Arquivo '#{email_file.file.filename}' enviado com sucesso. O processamento iniciou em background."
+      redirect_to email_files_path
+    else
+      flash[:alert] = "Falha ao enviar arquivo: #{email_file.errors.full_messages.to_sentence}"
+      redirect_to email_files_path
+    end
+  end
+
+  private
+
+  def save_params
+    { status: :processing, filename: params[:email_file][:file].original_filename }
+  end
+
+  def email_file_params
+    params.require(:email_file).permit(:file).merge(status: :pending)
+  end
+end

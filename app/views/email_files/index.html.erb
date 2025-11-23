@@ -1,0 +1,39 @@
+<div class="container mt-5">
+  <h1>📤 Processamento de E-mails (.eml)</h1>
+  <hr>
+  
+  <%= turbo_stream_from "customers" %>
+  <%= turbo_stream_from "processing_logs" %>
+
+  <div class="card mb-4 bg-light p-4">
+    <h2 class="card-title">Enviar Arquivo .EML para Processamento</h2>
+    
+    <%= form_with(model: EmailFile.new, url: email_files_path, local: true, html: { multipart: true }) do |form| %>
+      <div class="mb-3">
+        <%= form.label :file, "Selecione o arquivo (.eml)", class: "form-label" %>
+        <%= form.file_field :file, class: "form-control", accept: ".eml" %>
+      </div>
+      <%= form.submit "Processar em Background", class: "btn btn-primary" %>
+    <% end %>
+  </div>
+
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-6">
+        <h2 class="mt-4">👤 Clientes Criados (Customers)</h2>
+        
+        <turbo-frame id="customers" data-turbo-poll="5000">
+          <%= render 'customers', customers: @customers %> 
+        </turbo-frame>
+      </div>
+
+      <div class="col-md-6">
+        <h2 class="mt-4">📊 Logs de Processamento (Resultados)</h2>
+        
+        <turbo-frame id="processing_logs" data-turbo-frame-reload="5000"> 
+          <%= render 'processing_logs', logs: @logs %> 
+        </turbo-frame>
+      </div>
+    </div>
+  </div>
+</div>
