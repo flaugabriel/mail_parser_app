@@ -20,7 +20,7 @@ gem "sidekiq"
 gem "redis"
 gem "mail"
 gem "i18n"
-gem "enumerize", "~> 2.0.1"
+gem "enumerize", "~> 2.8.1"
 
 group :development, :test do
   gem "brakeman", require: false

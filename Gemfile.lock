@@ -108,7 +108,7 @@ GEM
     dotenv (3.1.8)
     drb (2.2.3)
     ed25519 (1.4.0)
-    enumerize (2.0.1)
+    enumerize (2.8.1)
       activesupport (>= 3.2)
     erb (6.0.0)
     erubi (1.13.1)
@@ -409,7 +409,7 @@ DEPENDENCIES
   concurrent-ruby
   cssbundling-rails
   debug
-  enumerize (~> 2.0.1)
+  enumerize (~> 2.8.1)
   factory_bot_rails
   faker
   html2slim
