@@ -26,7 +26,7 @@ group :development, :test do
   gem "brakeman", require: false
   gem "ruby-lsp"
   gem "rubocop-rails-omakase", require: false
-  gem "rspec-rails", "~> 6.1"
+  gem "rspec-rails", "~> 8.0"
   gem "simplecov", "~> 0.22.0", require: false
   gem "rubocop", "~> 1.63.0", require: false
   gem "rubocop-rails", "~> 2.24.0", require: false
