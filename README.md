@@ -22,7 +22,7 @@ Este projeto utiliza Docker e Docker Compose para facilitar a configuração dos
 ### 2. Clonando o projeto
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/flaugabriel/mail_parser_app
 cd mail_parser_app
 ```
 ### 3. Build e inicialização dos containers
