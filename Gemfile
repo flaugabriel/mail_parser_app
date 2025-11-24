@@ -28,7 +28,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
   gem "rspec-rails", "~> 6.1"
   gem "simplecov", "~> 0.22.0", require: false
-  gem "rubocop", "~> 1.63.0", require: false
+  gem "rubocop", "~> 1.81.7", require: false
   gem "rubocop-rails", "~> 2.24.0", require: false
   gem "shoulda-matchers"
   gem "rails-controller-testing"
