@@ -62,6 +62,8 @@ Aqui está o painel principal:
 
 ![coverage/index.html](app/assets/images/coverage.png)
 
+ou [clique aqui](https://github.com/flaugabriel/mail_parser_app/blob/main/app/assets/images/coverage.png)
+
 #### OBS: 
 - caso queira ligar tudo local configure pelo arquivo config/application.yml
 - Basta instalar o redis local e o banco de dados postgres.
