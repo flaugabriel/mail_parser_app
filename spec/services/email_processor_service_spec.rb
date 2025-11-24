@@ -1,46 +1,85 @@
-# spec/processors/email_processor_service_spec.rb
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe EmailProcessorService do
-  # Define o mapeamento dinâmico para testar a decisão
-  before do
-    # Mock das classes SupplierAParser para evitar dependência real de parsing aqui
-    stub_const('SupplierAParser', Class.new(BaseParser) { def parse!; @client_email = 'mock@a.com'; end })
-    stub_const('PartnerBParser', Class.new(BaseParser) { def parse!; @client_email = 'mock@b.com'; end })
+  let(:valid_email_content_supplier) do
+    <<~EMAIL
+      From: loja@fornecedora.com
+      To: vendas@suaempresa.com
+      Subject: Pedido Teste
 
-    # Simula o mapeamento de domínio (após a correção de string matching)
-    stub_const('EmailProcessorService::SENDER_MAPPING', {
-      "fornecedora.com" => SupplierAParser,
-      "parceirob.com" => PartnerBParser
-    })
+      Corpo do email...
+    EMAIL
   end
 
-  let(:supplier_email) { Mail.new(from: 'vendas@fornecedora.com', body: 'Test').to_s }
-  let(:partner_email) { Mail.new(from: 'contato@parceirob.com', body: 'Test').to_s }
-  let(:unknown_email) { Mail.new(from: 'desconhecido@outrosite.com', body: 'Test').to_s }
+  let(:valid_email_content_partner) do
+    <<~EMAIL
+      From: pedido@parceiro.com
+      To: vendas@suaempresa.com
+      Subject: Pedido Teste
 
-  describe '#process' do
-    context 'when remittent is recognized (Supplier A)' do
-      it 'returns an instance of the correct parser class' do
-        parser = EmailProcessorService.new(supplier_email).process
-        expect(parser).to be_a(SupplierAParser)
-        expect(parser.client_email).to eq('mock@a.com')
+      Corpo do email...
+    EMAIL
+  end
+
+  let(:unknown_sender_email_content) do
+    <<~EMAIL
+      From: contato@desconhecido.com
+      To: vendas@suaempresa.com
+      Subject: Pedido Teste
+
+      Corpo do email...
+    EMAIL
+  end
+
+  describe "#process" do
+    context "quando o remetente é reconhecido" do
+      it "retorna uma instância do SupplierAParser se o domínio for fornecedora.com" do
+        service = described_class.new(valid_email_content_supplier)
+
+        result = service.process
+
+        expect(result).to be_a(Parsers::SupplierAParser)
+      end
+
+      it "retorna uma instância do PartnerBParser se o domínio for parceiro.com" do
+        service = described_class.new(valid_email_content_partner)
+
+        result = service.process
+
+        expect(result).to be_a(Parsers::PartnerBParser)
+      end
+
+      it "chama o método parse! no parser" do
+        parser_instance = instance_double(Parsers::SupplierAParser)
+        allow(Parsers::SupplierAParser).to receive(:new).and_return(parser_instance)
+        allow(parser_instance).to receive(:parse!)
+
+        service = described_class.new(valid_email_content_supplier)
+        service.process
+
+        expect(parser_instance).to have_received(:parse!)
       end
     end
 
-    context 'when remittent is recognized (Partner B)' do
-      it 'returns an instance of the correct parser class' do
-        parser = EmailProcessorService.new(partner_email).process
-        expect(parser).to be_a(PartnerBParser)
-        expect(parser.client_email).to eq('mock@b.com')
+    context "quando o remetente NÃO é reconhecido" do
+      it "lança erro informando domínio desconhecido" do
+        service = described_class.new(unknown_sender_email_content)
+
+        expect { service.process }.to raise_error(
+          /Parser não encontrado para o domínio: desconhecido.com/
+        )
       end
     end
 
-    context 'when remittent is NOT recognized' do
-      it 'raises an error' do
-        expect {
-          EmailProcessorService.new(unknown_email).process
-        }.to raise_error("Parser não encontrado para o domínio: outrosite.com")
+    context "quando ocorre um erro interno no parser" do
+      it "captura e lança erro com mensagem formatada" do
+        parser_instance = instance_double(Parsers::SupplierAParser)
+        allow(Parsers::SupplierAParser).to receive(:new).and_return(parser_instance)
+        allow(parser_instance).to receive(:parse!).and_raise(StandardError.new("Erro interno"))
+
+        service = described_class.new(valid_email_content_supplier)
+
+        expect { service.process }.to raise_error(/Falha no processamento do email: Erro interno/)
       end
     end
   end

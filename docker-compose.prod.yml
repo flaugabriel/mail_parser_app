@@ -31,6 +31,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: mail_parser_app_production
       POSTGRES_PASSWORD: postgres
+      DISABLE_DATABASE_ENVIRONMENT_CHECK: 1
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -38,7 +39,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis_eml_processor
     ports:
       - "6379:6379"
 
@@ -52,13 +52,10 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_DB: mail_parser_app_production
-    
-    # 🎯 CORREÇÃO CRÍTICA DO ActiveStorage: Compartilhar o volume de armazenamento!
     volumes:
       - .:/app # Compartilha o código (opcional, mas recomendado)
       - rails_storage:/app/storage # NECESSÁRIO para ler o arquivo .eml salvo pelo 'web'
 
-    # 🎯 CORREÇÃO DE DEPENDÊNCIA: O Sidekiq depende do DB e Redis, não do Web.
     depends_on:
       - db
       - redis

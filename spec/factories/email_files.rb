@@ -1,18 +1,13 @@
-# spec/factories/email_files.rb
 FactoryBot.define do
   factory :email_file do
-    # O Active Storage anexa o arquivo binário
-    trait :with_attached_file do
-      transient do
-        filename { 'test_email.eml' }
-        content { 'Simulated email content' }
-      end
+    status { :processing }
 
-      file do
-        Rack::Test::UploadedFile.new(
-          StringIO.new(content),
-          'message/rfc822', # Tipo MIME para .eml
-          filename: filename
+    after(:build) do |email_file|
+      unless email_file.file.attached?
+        email_file.file.attach(
+          io: StringIO.new("fake email content"),
+          filename: "example.eml",
+          content_type: "message/rfc822"
         )
       end
     end

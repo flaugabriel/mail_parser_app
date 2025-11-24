@@ -13,8 +13,19 @@
 # it.
 #
 # See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+require 'spec_helper'
+require 'simplecov'
+
+SimpleCov.start 'rails' do
+  enable_coverage :branch
+  track_files '{app,lib}/**/*.rb'
+
+  add_filter %r{^/config/}
+  add_filter %r{^/spec/}
+  add_filter %r{^/app/views/} # 👈 ignora .erb, .haml, .slim
+end
+
 RSpec.configure do |config|
-  config.include FactoryBot::Syntax::Methods
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.

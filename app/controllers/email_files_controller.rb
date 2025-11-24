@@ -1,6 +1,4 @@
 class EmailFilesController < ApplicationController
-  before_action :set_email_file, only: %i[ show ]
-
   # GET /email_files or /email_files.json
   def index
     @email_files = EmailFile.order(created_at: :desc).limit(100)

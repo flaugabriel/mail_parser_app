@@ -2,7 +2,7 @@ require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
-
+  config.active_job.queue_adapter = :inline
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
   config.action_cable.allowed_request_origins = [ "http://localhost:3000", "http://127.0.0.1:3000" ]

@@ -1,32 +1,16 @@
-<div id="flash-messages" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none w-80">
+<div id="flash-messages" class="fixed top-4 mt-3">
   <% flash.each do |type, message| %>
-    <% 
-      # 🎯 Mapeamento de cores para replicar o estilo Bootstrap 5 (fundo claro, texto escuro)
-      case type.to_sym
-      when :notice 
-        bg_class = "bg-green-100 border-green-500"
-        text_color = "text-green-800"
-        icon_color = "text-green-600"
-      when :alert, :error 
-        bg_class = "bg-red-100 border-red-500"
-        text_color = "text-red-800"
-        icon_color = "text-red-600"
-      else 
-        bg_class = "bg-blue-100 border-blue-500"
-        text_color = "text-blue-800"
-        icon_color = "text-blue-600"
-      end
-    %>
+    <% bg_color = case type.to_sym
+                 when :notice then "bg-green-200 text-green-800"
+                 when :alert  then "bg-yellow-200 text-yellow-800"
+                 when :error  then "bg-red-200 text-red-800"
+                 else "bg-blue-200 text-blue-800"
+                 end %>
 
-    <div data-controller="flash"
-         class="<%= bg_class %> <%= text_color %> border-l-4 px-4 py-3 rounded-lg shadow-md
-                background-opacity-90  
-                pointer-events-auto transform transition-all duration-500 ease-in-out"
-         role="alert">
-      
-      <div class="flex justify-between items-center gap-4">
-        <span class="font-medium flex-grow"><%= message %></span>
-      </div>
+    <div class="<%= bg_color %> px-4 py-2 rounded shadow" role="alert">
+      <span class="<%= bg_color %> h3">
+        <%= message %>
+      </span>
     </div>
   <% end %>
 </div>

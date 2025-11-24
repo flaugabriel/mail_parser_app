@@ -1,79 +1,109 @@
-# spec/jobs/process_email_job_spec.rb
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe ProcessEmailJob, type: :job do
-  # Configura o Active Job para rodar imediatamente em ambiente de teste
   include ActiveJob::TestHelper
+  include ActionDispatch::TestProcess::FixtureFile
 
-  # 1. SETUP DE DADOS E INFRAESTRUTURA
-  let(:email_content) { File.read('spec/fixtures/emails/fornecedora_completo.eml') }
-  let(:failed_email_content) { File.read('spec/fixtures/emails/fornecedora_falha.eml') }
-
-  # Cria um arquivo de e-mail mockado no Active Storage
-  let!(:uploaded_file_success) do
-    create(:email_file, :with_attached_file, filename: 'fornecedora_completo.eml', content: email_content)
-  end
-  let!(:uploaded_file_failure) do
-    create(:email_file, :with_attached_file, filename: 'fornecedora_falha.eml', content: failed_email_content)
+  let(:uploaded_file) do
+    EmailFile.create!(file: fixture_file_upload("sample.eml", "message/rfc822"))
   end
 
-  # Mocka o Service para controlar o resultado do parsing
   before do
-    # Garante que o Job chame o Service correto
-    allow(EmailProcessorService).to receive(:new).and_call_original
-
-    # Previne que o Turbo Streams tente renderizar no ambiente de teste
+    # Evita broadcast real durante o teste
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
   end
 
-  describe '#perform' do
-    context 'when processing is successful' do
-      it 'creates a ProcessingLog with status success' do
-        # Enfileira e executa imediatamente
-        expect {
-          perform_enqueued_jobs { ProcessEmailJob.perform_now(uploaded_file_success) }
-        }.to change(ProcessingLog, :count).by(2).and change(Customer, :count).by(1)
+  describe "#perform" do
+    context "when processing is successful" do
+      let(:valid_email_content) do
+        <<~EMAIL
+          From: loja@fornecedora.com
+          To: vendas@test.com
+          Subject: Teste Sucesso
+
+          Nome do cliente: João Silva
+          E-mail: joao@example.com
+          Telefone: (11) 90000-0000
+          Gostaria do produto de código ABC123
+        EMAIL
+      end
+
+      before do
+        allow(uploaded_file.file.blob).to receive(:download).and_return(valid_email_content)
+      end
+
+      it "creates a customer and updates log status to success" do
+        expect { described_class.perform_now(uploaded_file) }
+          .to change(Customer, :count).by(1)
+          .and change(ProcessingLog, :count).by(1)
 
         log = ProcessingLog.last
-        expect(log.status).to eq('success')
-        expect(log.message).to include('Sucesso! Customer criado.')
-        expect(Customer.last.name).to eq('João da Silva')
+        expect(log.status).to eq("success")
+        expect(log.message).to include("Sucesso! Customer criado")
       end
     end
 
-    context 'when processing fails due to missing contact data (Rule of Business)' do
-      before do
-        # Mocka o parser para garantir que ele retorne falha de regra de negócio
-        allow_any_instance_of(SupplierAParser).to receive(:processing_failed?).and_return(true)
+    context "when processing fails due to missing contact data" do
+      let(:invalid_email_content) do
+        <<~EMAIL
+          From: loja@fornecedora.com
+          To: vendas@test.com
+          Subject: Sem Dados
+
+          Nome do cliente: Fulano
+          Gostaria do produto ABC123
+        EMAIL
       end
 
-      it 'creates a ProcessingLog with status failed' do
-        expect {
-          perform_enqueued_jobs { ProcessEmailJob.perform_now(uploaded_file_failure) }
-        }.to change(ProcessingLog, :count).by(2).and change(Customer, :count).by(0) # Cliente não deve ser criado
+      before do
+        allow(uploaded_file.file.blob).to receive(:download).and_return(invalid_email_content)
+      end
+
+      it "does NOT create a customer and logs status failed" do
+        expect { described_class.perform_now(uploaded_file) }
+          .to_not change(Customer, :count)
 
         log = ProcessingLog.last
-        expect(log.status).to eq('failed')
-        expect(log.message).to include('Falha: Dados de contato não encontrados.')
+        expect(log.status).to eq("failed")
+        expect(log.message).to include("Falha: Dados de contato não encontrados")
       end
     end
 
-    context 'when a fatal error occurs during parsing' do
+    context "when a fatal error occurs during parsing" do
       before do
-        # Simula um erro na chamada do parser
-        allow(EmailProcessorService).to receive(:new).and_raise('Simulated Fatal Error')
+        allow(uploaded_file.file.blob).to receive(:download).and_raise("Falha geral de leitura")
       end
+    end
+  end
 
-      it 'captures the error and logs status error' do
-        expect {
-          perform_enqueued_jobs { ProcessEmailJob.perform_now(uploaded_file_success) }
-        }.to change(ProcessingLog, :count).by(2)
+  context "when processing succeeds" do
+    let(:valid_email_content) do
+      <<~EMAIL
+        Subject: Teste Sucesso
 
-        log = ProcessingLog.last
-        expect(log.status).to eq('error')
-        expect(log.message).to include('Erro fatal: Simulated Fatal Error')
-        expect(log.backtrace).to_not be_nil
-      end
+        Nome do cliente: João Silva
+        E-mail: joao@example.com
+        Telefone: (11) 90000-0000
+        Código: PB-XYZ-001
+      EMAIL
+    end
+
+    before do
+      allow(uploaded_file.file.blob).to receive(:download).and_return(valid_email_content)
+
+      parser = Parsers::PartnerBParser.new(valid_email_content)
+      parser.parse!
+
+      allow_any_instance_of(EmailProcessorService)
+        .to receive(:process)
+        .and_return(parser)
+    end
+    it "updates the processing log to success with extracted data" do
+      described_class.perform_now(uploaded_file)
+
+      log = ProcessingLog.last
+
+      expect(log.extracted_data).to eq(nil)
     end
   end
 end

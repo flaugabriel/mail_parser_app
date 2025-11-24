@@ -4,7 +4,6 @@ Rails.application.configure do
   config.require_master_key = false
   config.action_dispatch.trusted_proxies = [ "127.0.0.1", "::1", "172.0.0.0/8" ] # Permite a sub-rede Docker
   config.action_dispatch.ip_spoofing_check = false # (Use com cautela, só se a rede for totalmente interna)
-
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
