@@ -8,16 +8,21 @@ class EmailFilesController < ApplicationController
 
   # POST /email_files or /email_files.json
   def create
+    if params[:email_file].blank? || params[:email_file][:file].blank?
+      flash[:alert] = "Nenhum arquivo foi selecionado."
+      return redirect_to email_files_path
+    end
+
     email_file = EmailFile.new(email_file_params.merge(save_params))
+
     if email_file.save
       ProcessEmailJob.perform_later(email_file)
-
       flash[:notice] = "Arquivo '#{email_file.file.filename}' enviado com sucesso. O processamento iniciou em background."
-      redirect_to email_files_path
     else
       flash[:alert] = "Falha ao enviar arquivo: #{email_file.errors.full_messages.to_sentence}"
-      redirect_to email_files_path
     end
+
+    redirect_to email_files_path
   end
 
   private
