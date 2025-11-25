@@ -1,18 +1,48 @@
-<table class="table table-striped table-sm">
-  <thead class="table-dark">
-    <tr>
-      <th>Arquivo</th>
-      <th>Mensagem</th>
-      <th>Criado em</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% logs.each do |log| %>
-      <tr id="<%= dom_id(log) %>" class="<%= log_row_class(log.status) %>">
-        <td><%= log.email_file&.file&.filename %></td>
-        <td><%= truncate(log.message, length: 60) %></td>
-        <td><%= l log.created_at, format: :short %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<div class="logs-wrapper">
+  <% logs.each do |log| %>
+
+    <% color = {
+      "success" => "success",
+      "error"   => "danger",
+      "warning" => "warning",
+      "info"    => "info",
+      "failed"  => "danger",
+      "pending" => "secondary"
+    }[log.status.to_s.downcase] || "secondary" %>
+
+    <% icon = {
+      "success" => "bi-check-circle-fill",
+      "error"   => "bi-x-circle-fill",
+      "warning" => "bi-exclamation-triangle-fill",
+      "info"    => "bi-info-circle-fill",
+      "failed"  => "bi-x-circle-fill",
+      "pending" => "bi-clock-fill"
+    }[log.status.to_s.downcase] || "bi-question-circle-fill" %>
+
+    <div class="card mb-3 text-white bg-<%= color %>">
+      <div class="card-body">
+
+        <!-- Header com ícone e status -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0 d-flex align-items-center gap-2">
+            <i class="bi <%= icon %>"></i>
+            <%= log.status.to_s.humanize %>
+          </h6>
+          <small><%= l log.created_at, format: :short %></small>
+        </div>
+
+        <!-- Mensagem com quebra -->
+        <p class="mb-3" style="white-space: pre-wrap;">
+          <%= log.message %>
+        </p>
+
+        <!-- Footer com metadados -->
+        <small>
+          📄 <%= log.email_file&.file&.filename || "-" %>
+        </small>
+
+      </div>
+    </div>
+
+  <% end %>
+</div>
